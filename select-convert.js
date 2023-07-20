@@ -1,3 +1,5 @@
+const popUpID = "select-convert-popup";
+
 let mouseUp = true;
 document.addEventListener("mouseup", () => {
     mouseUp = true;
@@ -27,12 +29,13 @@ function handleSelection() {
         console.log("Not selected"); //DEBUG
         return;
     }
-    const selectedText = getSelectionText();
+    const selectedText = getSelectionText().trim();
     if (!isTextConvertible(selectedText)) {
         console.log("Not convertible"); //DEBUG
         return;
     }
     const selectionCoordinates = getSelectionCoords();
+    createPopUp(selectionCoordinates.x, selectionCoordinates.y);
 }
 
 function isTextSelected() {
@@ -92,14 +95,14 @@ function getSelectionCoords() {
                 }
             }
             if (x == 0 && y == 0) {
-                var span = document.createElement("span");
+                let span = document.createElement("span");
                 if (span.getClientRects) {
-                    span.appendChild(document.createTextNode("\u200b") );
+                    span.appendChild(document.createTextNode("\u200b"));
                     range.insertNode(span);
                     rect = span.getClientRects()[0];
                     x = rect.left;
                     y = rect.top;
-                    var spanParent = span.parentNode;
+                    let spanParent = span.parentNode;
                     spanParent.removeChild(span);
                     spanParent.normalize();
                 }
@@ -107,4 +110,39 @@ function getSelectionCoords() {
         }
     }
     return { x: x, y: y };
+}
+
+function createPopUp(x, y, content) {
+    clearPopUp();
+    const popUp = document.createElement("div");
+    popUp.id = popUpID;
+    popUp.innerText = "Select-Convert Popup!";
+
+    const popUpStyles = {
+        fontSize: "18px",
+        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        padding: "0.5em",
+        lineHeight: "1em",
+        border: "hidden",
+        borderRadius: "0.35em",
+        color: "#E9F1EC",
+        backgroundColor: "#222227",
+        position: "fixed",
+        zIndex: 10000,
+        top: `${y}px`,
+        left: `${x}px`,
+        transform: "translate(0, calc(-100% - 0.5em))",
+    };
+
+    for (const property in popUpStyles) {
+        popUp.style[property] = popUpStyles[property];
+    }
+
+    document.body.appendChild(popUp);
+}
+
+function clearPopUp() {    
+    if (!!document.getElementById(popUpID)) {
+        document.getElementById(popUpID).remove();
+    }
 }
