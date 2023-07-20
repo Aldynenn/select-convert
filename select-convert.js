@@ -6,7 +6,6 @@ document.addEventListener("mousedown", () => {
     mouseUp = false;
 });
 
-
 document.addEventListener("selectionchange", () => {
     if (isTextSelected() && mouseUp) {
         handleSelection();
@@ -23,6 +22,18 @@ browser.runtime.onMessage.addListener((message) => {
     console.log("Data received in the background script:", data);
 });
 
+function handleSelection() {
+    if (!isTextSelected()) {
+        console.log("Not selected"); //DEBUG
+        return;
+    }
+    const selectedText = getSelectionText();
+    if (!isTextConvertible(selectedText)) {
+        console.log("Not convertible"); //DEBUG
+        return;
+    }
+    const selectionCoordinates = getSelectionCoords();
+}
 
 function isTextSelected() {
     const selection = window.getSelection();
@@ -39,18 +50,61 @@ function getSelectionText() {
     return text;
 }
 
-function handleSelection() {
-    if (isTextSelected()) {
-        const selectedText = getSelectionText();
-        console.log(selectedText);
-    }
-}
-
 function isTextConvertible(text) {
     const currencyRegex = /^(?:\p{Sc}.*\d|\d.*\p{Sc})$/u;
-    const unitRegex = /^(\d{1,3}(?:[.,]\d{3})*)(?:\.\d+)?\s*(?:[a-zA-Z\u00C0-\u017F\u00B0]+)$/u;
+    const unitRegex = /^(\d{1,3}(?:[., ]\d{3})*)(?:\.\d+)?\s*(?:[a-zA-Z\u00C0-\u017F\u00B0]+)$/u;
     const containsCurrencySymbol = currencyRegex.test(text);
     const containsUnit = unitRegex.test(text);
+    return containsCurrencySymbol || containsUnit;
+}
 
-    
+function getSelectionCoords() {
+    let selection = document.selection
+    let range;
+    let rects;
+    let rect;
+    let x = 0;
+    let y = 0;
+    if (selection) {
+        if (selection.type != "Control") {
+            range = selection.createRange();
+            range.collapse(true);
+            x = range.boundingLeft;
+            y = range.boundingTop;
+        }
+    } else if (window.getSelection) {
+        selection = window.getSelection();
+        if (selection.rangeCount) {
+            range = selection.getRangeAt(0).cloneRange();
+            if (range.getClientRects) {
+                range.collapse(true);
+                rects = range.getClientRects();
+                if (rects.length > 0) {
+                    rect = rects[0];
+                }
+                if (rect === undefined) {
+                    x = 0;
+                    y = 0;
+                }
+                else {
+                    x = rect.left;
+                    y = rect.top;
+                }
+            }
+            if (x == 0 && y == 0) {
+                var span = document.createElement("span");
+                if (span.getClientRects) {
+                    span.appendChild(document.createTextNode("\u200b") );
+                    range.insertNode(span);
+                    rect = span.getClientRects()[0];
+                    x = rect.left;
+                    y = rect.top;
+                    var spanParent = span.parentNode;
+                    spanParent.removeChild(span);
+                    spanParent.normalize();
+                }
+            }
+        }
+    }
+    return { x: x, y: y };
 }
