@@ -19,8 +19,13 @@ document.addEventListener("mouseup", () => {
     }
 });
 
-browser.runtime.onMessage.addListener((message) => {
+browser.runtime.onMessage.addListener(async (message) => {
     const data = message.data;
+    let extensionEnabled = await browser.storage.local.get("extensionState");
+    console.log(extensionEnabled);
+    if (!extensionEnabled) {
+        
+    }
     console.log("Data received in the background script:", data);
 });
 
@@ -118,31 +123,49 @@ function createPopUp(x, y, content) {
     popUp.id = popUpID;
     popUp.innerText = "Select-Convert Popup!";
 
-    const popUpStyles = {
-        fontSize: "18px",
-        fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        padding: "0.5em",
-        lineHeight: "1em",
-        border: "hidden",
-        borderRadius: "0.35em",
-        color: "#E9F1EC",
-        backgroundColor: "#222227",
-        position: "fixed",
-        zIndex: 10000,
-        top: `${y}px`,
-        left: `${x}px`,
-        transform: "translate(0, calc(-100% - 0.5em))",
-    };
-
-    for (const property in popUpStyles) {
-        popUp.style[property] = popUpStyles[property];
+    if (!document.getElementById("select-convert-styles"))
+    {
+        let css = `
+        #${popUpID} {
+            font-size: 18px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 0.5em;
+            line-height: 1em;
+            border: hidden;
+            border-radius: 0.35em;
+            color: #E9F1EC;
+            background-color: #222227;
+            position: fixed;
+            z-index: 10000;
+            top: ${y}px;
+            left: ${x}px;
+            translate: 0 calc(-100% - 0.5em);
+            scale: 0;
+            transition: 250ms ease scale;
+        }
+        #${popUpID}.show {
+            scale: 1;
+            transition: 250ms ease scale;
+        }
+        `;
+        let selectConvertStyles = document.createElement("style");
+        selectConvertStyles.setAttribute("type", "text/css");    
+        selectConvertStyles.id = "select-convert-styles";    
+        selectConvertStyles.appendChild(document.createTextNode(css));
+        document.head.appendChild(selectConvertStyles);
     }
 
     document.body.appendChild(popUp);
+    requestAnimationFrame(() => {
+        popUp.classList.add("show");
+    });
 }
 
 function clearPopUp() {    
     if (!!document.getElementById(popUpID)) {
-        document.getElementById(popUpID).remove();
+        document.getElementById(popUpID).classList.remove("show");
+        document.getElementById(popUpID).addEventListener("transitionend", () => {
+            document.getElementById(popUpID).remove();
+        });
     }
 }
