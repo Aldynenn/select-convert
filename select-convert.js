@@ -24,12 +24,13 @@ browser.runtime.onMessage.addListener(async (message) => {
     let extensionEnabled = await browser.storage.local.get("extensionState");
     console.log(extensionEnabled);
     if (!extensionEnabled) {
-        
+
     }
     console.log("Data received in the background script:", data);
 });
 
 function handleSelection() {
+    clearPopUp();
     if (!isTextSelected()) {
         console.log("Not selected"); //DEBUG
         return;
@@ -114,7 +115,10 @@ function getSelectionCoords() {
             }
         }
     }
-    return { x: x, y: y };
+    return {
+        x: x,
+        y: y
+    };
 }
 
 function createPopUp(x, y, content) {
@@ -123,34 +127,34 @@ function createPopUp(x, y, content) {
     popUp.id = popUpID;
     popUp.innerText = "Select-Convert Popup!";
 
-    if (!document.getElementById("select-convert-styles"))
-    {
+    if (!document.getElementById("select-convert-styles")) {
         let css = `
-        #${popUpID} {
-            font-size: 18px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 0.5em;
-            line-height: 1em;
-            border: hidden;
-            border-radius: 0.35em;
-            color: #E9F1EC;
-            background-color: #222227;
-            position: fixed;
-            z-index: 10000;
-            top: ${y}px;
-            left: ${x}px;
-            translate: 0 calc(-100% - 0.5em);
-            scale: 0;
-            transition: 250ms ease scale;
-        }
-        #${popUpID}.show {
-            scale: 1;
-            transition: 250ms ease scale;
-        }
-        `;
+            #${popUpID} {
+                font-size: 18px;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                padding: 0.5em;
+                line-height: 1em;
+                border: hidden;
+                border-radius: 0.35em;
+                color: #E9F1EC;
+                background-color: #222227;
+                position: fixed;
+                z-index: 10000;
+                top: ${y}px;
+                left: ${x}px;
+                translate: 0 calc(-100% - 0.5em);
+                scale: 0;
+                transform-origin: bottom left;
+                transition: 120ms ease scale;
+            }
+            #${popUpID}.show {
+                scale: 1;
+                transition: 250ms ease scale;
+            }
+            `;
         let selectConvertStyles = document.createElement("style");
-        selectConvertStyles.setAttribute("type", "text/css");    
-        selectConvertStyles.id = "select-convert-styles";    
+        selectConvertStyles.setAttribute("type", "text/css");
+        selectConvertStyles.id = "select-convert-styles";
         selectConvertStyles.appendChild(document.createTextNode(css));
         document.head.appendChild(selectConvertStyles);
     }
@@ -158,14 +162,24 @@ function createPopUp(x, y, content) {
     document.body.appendChild(popUp);
     requestAnimationFrame(() => {
         popUp.classList.add("show");
+        document.addEventListener("click", handleClickOutside);
     });
 }
 
-function clearPopUp() {    
+function clearPopUp() {
     if (!!document.getElementById(popUpID)) {
-        document.getElementById(popUpID).classList.remove("show");
-        document.getElementById(popUpID).addEventListener("transitionend", () => {
-            document.getElementById(popUpID).remove();
+        let popUp = document.getElementById(popUpID);
+        popUp.classList.remove("show");
+        popUp.addEventListener("transitionend", () => {
+            popUp.remove();
         });
+    }
+}
+
+function handleClickOutside(event) {
+    const popUp = document.getElementById(popUpID);
+    if (popUp && !popUp.contains(event.target)) {
+        clearPopUp();
+        document.removeEventListener("click", handleClickOutside);
     }
 }
