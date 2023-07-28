@@ -1,4 +1,4 @@
-const popUpID = "select-convert-popup";
+const popUpClassName = "select-convert-extension-converted-unit-popup";
 
 let mouseUp = true;
 document.addEventListener("mouseup", () => {
@@ -14,6 +14,7 @@ document.addEventListener("selectionchange", () => {
     }
 });
 document.addEventListener("mouseup", () => {
+    console.log("MOUSEUP TRIGGERED");
     if (isTextSelected() && mouseUp) {
         handleSelection();
     }
@@ -30,7 +31,7 @@ browser.runtime.onMessage.addListener(async (message) => {
 });
 
 function handleSelection() {
-    clearPopUp();
+    clearPopUps();
     if (!isTextSelected()) {
         console.log("Not selected"); //DEBUG
         return;
@@ -122,14 +123,14 @@ function getSelectionCoords() {
 }
 
 function createPopUp(x, y, content) {
-    clearPopUp();
+    clearPopUps();
     const popUp = document.createElement("div");
-    popUp.id = popUpID;
+    popUp.classList.add(popUpClassName);
     popUp.innerText = "Select-Convert Popup!";
 
     if (!document.getElementById("select-convert-styles")) {
         let css = `
-            #${popUpID} {
+            .${popUpClassName} {
                 font-size: 18px;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 padding: 0.5em;
@@ -147,7 +148,7 @@ function createPopUp(x, y, content) {
                 transform-origin: bottom left;
                 transition: 120ms ease scale;
             }
-            #${popUpID}.show {
+            .${popUpClassName}.show {
                 scale: 1;
                 transition: 250ms ease scale;
             }
@@ -166,20 +167,27 @@ function createPopUp(x, y, content) {
     });
 }
 
-function clearPopUp() {
-    if (!!document.getElementById(popUpID)) {
-        let popUp = document.getElementById(popUpID);
-        popUp.classList.remove("show");
-        popUp.addEventListener("transitionend", () => {
-            popUp.remove();
-        });
+function clearPopUps() {
+    if (document.getElementsByClassName(popUpClassName).length != 0) {
+        let popUps = document.getElementsByClassName(popUpClassName);
+        for (const popUp of popUps) {            
+            if (popUp.classList.contains("show")) {                
+                popUp.classList.remove("show");
+                popUp.addEventListener("transitionend", () => {
+                    popUp.remove();
+                });
+            }
+            else {
+                popUp.remove();
+            }
+        }
     }
 }
 
 function handleClickOutside(event) {
-    const popUp = document.getElementById(popUpID);
+    const popUp = document.getElementsByClassName(popUpClassName)[0];
     if (popUp && !popUp.contains(event.target)) {
-        clearPopUp();
+        clearPopUps();
         document.removeEventListener("click", handleClickOutside);
     }
 }
